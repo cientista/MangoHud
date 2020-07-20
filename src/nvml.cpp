@@ -1,9 +1,10 @@
 #include "loaders/loader_nvml.h"
 #include "nvidia_info.h"
 #include <iostream>
+#include <memory>
 #include "overlay.h"
 
-libnvml_loader nvml("libnvidia-ml.so.1");
+extern std::shared_ptr<libnvml_loader> nvml;
 
 nvmlReturn_t result;
 nvmlDevice_t nvidiaDevice;
@@ -14,22 +15,22 @@ struct nvmlUtilization_st nvidiaUtilization;
 struct nvmlMemory_st nvidiaMemory {};
 
 bool checkNVML(const char* pciBusId){
-    if (nvml.IsLoaded()){
-        result = nvml.nvmlInit();
+    if (nvml->IsLoaded()){
+        result = nvml->nvmlInit();
         if (NVML_SUCCESS != result) {
             std::cerr << "MANGOHUD: Nvidia module not loaded\n";
         } else {
             nvmlReturn_t ret = NVML_ERROR_UNKNOWN;
-            if (pciBusId && ((ret = nvml.nvmlDeviceGetHandleByPciBusId(pciBusId, &nvidiaDevice)) != NVML_SUCCESS)) {
-                std::cerr << "MANGOHUD: Getting device handle by PCI bus ID failed: " << nvml.nvmlErrorString(ret) << "\n";
+            if (pciBusId && ((ret = nvml->nvmlDeviceGetHandleByPciBusId(pciBusId, &nvidiaDevice)) != NVML_SUCCESS)) {
+                std::cerr << "MANGOHUD: Getting device handle by PCI bus ID failed: " << nvml->nvmlErrorString(ret) << "\n";
                 std::cerr << "          Using index 0.\n";
             }
 
             if (ret != NVML_SUCCESS)
-                ret = nvml.nvmlDeviceGetHandleByIndex(0, &nvidiaDevice);
+                ret = nvml->nvmlDeviceGetHandleByIndex(0, &nvidiaDevice);
 
             if (ret != NVML_SUCCESS)
-                std::cerr << "MANGOHUD: Getting device handle failed: " << nvml.nvmlErrorString(ret) << "\n";
+                std::cerr << "MANGOHUD: Getting device handle failed: " << nvml->nvmlErrorString(ret) << "\n";
 
             nvmlSuccess = (ret == NVML_SUCCESS);
             return nvmlSuccess;
@@ -42,13 +43,13 @@ bool checkNVML(const char* pciBusId){
 
 bool getNVMLInfo(){
     nvmlReturn_t response;
-    response = nvml.nvmlDeviceGetUtilizationRates(nvidiaDevice, &nvidiaUtilization);
-    nvml.nvmlDeviceGetTemperature(nvidiaDevice, NVML_TEMPERATURE_GPU, &nvidiaTemp);
-    nvml.nvmlDeviceGetMemoryInfo(nvidiaDevice, &nvidiaMemory);
-    nvml.nvmlDeviceGetClockInfo(nvidiaDevice, NVML_CLOCK_GRAPHICS, &nvidiaCoreClock);
-    nvml.nvmlDeviceGetClockInfo(nvidiaDevice, NVML_CLOCK_MEM, &nvidiaMemClock);
-    nvml.nvmlDeviceGetPciInfo_v3(nvidiaDevice, &nvidiaPciInfo);
-    nvml.nvmlDeviceGetPowerUsage(nvidiaDevice, &nvidiaPowerUsage);
+    response = nvml->nvmlDeviceGetUtilizationRates(nvidiaDevice, &nvidiaUtilization);
+    nvml->nvmlDeviceGetTemperature(nvidiaDevice, NVML_TEMPERATURE_GPU, &nvidiaTemp);
+    nvml->nvmlDeviceGetMemoryInfo(nvidiaDevice, &nvidiaMemory);
+    nvml->nvmlDeviceGetClockInfo(nvidiaDevice, NVML_CLOCK_GRAPHICS, &nvidiaCoreClock);
+    nvml->nvmlDeviceGetClockInfo(nvidiaDevice, NVML_CLOCK_MEM, &nvidiaMemClock);
+    nvml->nvmlDeviceGetPciInfo_v3(nvidiaDevice, &nvidiaPciInfo);
+    nvml->nvmlDeviceGetPowerUsage(nvidiaDevice, &nvidiaPowerUsage);
     deviceID = nvidiaPciInfo.pciDeviceId >> 16;
 
     if (response == NVML_ERROR_NOT_SUPPORTED)
